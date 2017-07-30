@@ -329,9 +329,9 @@ public class AuthenticateSampleCode {
 			userName = args[1];
 		}
 		
-		AuthenticateSampleCode sampleHelper = new AuthenticateSampleCode(propertiesPath, userName);
+		AuthenticateSampleCode authenticator = new AuthenticateSampleCode(propertiesPath, userName);
 		
-		JSONObject response = sampleHelper.startAuthentication();
+		JSONObject response = authenticator.startAuthentication();
 		if (response.containsKey("responseBody")) {
 			response = (JSONObject)response.get("responseBody");
 		}
@@ -363,22 +363,24 @@ public class AuthenticateSampleCode {
 			case 30002: // this will happen when primary device's authentication type is voice - see above
 			case 30005: // this will happen when primary device's authentication type is Email - see above
 				otp = new Scanner(System.in).nextLong();
-				response = sampleHelper.authOffLine(sessionId, deviceId, otp);
+				response = authenticator.authOffLine(sessionId, deviceId, otp);
 				break;
 			case 30004: // this will happen when primary device's authentication type is yubiKey - see above
 				String yubikeyCode = new Scanner(System.in).nextLine();
-				response = sampleHelper.authOffLine(sessionId, deviceId, yubikeyCode);
+				response = authenticator.authOffLine(sessionId, deviceId, yubikeyCode);
+				break;
 			case 30007: //the selective mode is disable and the primary device authentication type is Mobile
-				response = sampleHelper.authOnLine(sessionId, deviceId);
+				response = authenticator.authOnLine(sessionId, deviceId);
 				errorId = (long)response.get("errorId");
 
-				//you should get a push to your phone...unless the phone has disabled notifications and then you'll get prompt to enter OTP from device
+				//you should get a push to your phone...
+				//unless the phone has disabled notifications and then you'll get prompt to enter OTP from device
 				
 				if (errorId == 30003) {
 					// this will happen when primary device's authentication type is application and notifications are disabled  
-					System.out.println(response.get("errorMsg"));
+					System.out.println(response.get("errorMsg")+". Please enter otp from App");
 					otp = new Scanner(System.in).nextLong();
-					response = sampleHelper.authOffLine(sessionId, deviceId, otp);
+					response = authenticator.authOffLine(sessionId, deviceId, otp);
 				}
 				break;
 			case 30008:
@@ -387,19 +389,19 @@ public class AuthenticateSampleCode {
 				// notice to index - i chose a different device
 				deviceId = (Long)((JSONObject)devices.get(1)).get("deviceId");
 				sessionId = (String)(response.get("sessionId"));
-				response = sampleHelper.startAuthentication(sessionId, deviceId);
+				response = authenticator.startAuthentication(sessionId, deviceId);
 				long flow = (Long)response.get("errorId");
 				
 				devices = (JSONArray) response.get("userDevices");
 				deviceId = (Long)((JSONObject)devices.get(0)).get("deviceId");
 				sessionId = (String)(response.get("sessionId"));
-				//the continuance is depends on the device in index number 1 in this sample- you can choose what ever you want
+				//the continuance is depends on the selected device. in this sample it's number 1- you can choose what ever you want
 				if (flow == 30007) {
-					response = sampleHelper.authOnLine(sessionId, deviceId);
+					response = authenticator.authOnLine(sessionId, deviceId);
 				} else {
-					System.out.println("You get an Email - Enter otp from mail");
-					otp = new Scanner(System.in).nextLong();
-					response = sampleHelper.authOffLine(sessionId, deviceId, otp);
+					//30001, 30002, 30003, 30005 authOffline with long otp
+					//30004 - authOffline with String otp
+					//....
 				}
 				break;
 			default:
