@@ -24,7 +24,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 /**
- * this Authenticate sample code demonstrates the usage of the startAuthentication API call of PingID
+ * this sample code demonstrates the authntication flow of PingID starting with the startAuthentication API call 
  * 
  * prerequisites: 
  * a. Existing organization with properties file 
@@ -36,8 +36,9 @@ import org.json.simple.parser.JSONParser;
  * @input path to path properties file (String)
  * @input an existing userName to authenticate
  * 
- *  the sample assumes that the inputs are correct and validate
- *  this is a simple main application.
+ *  the sample assumes that the inputs are correct and valid
+ *  
+ *  this is a SIMPLE main application.
  */
 public class AuthenticateSampleCode {
 
@@ -50,7 +51,7 @@ public class AuthenticateSampleCode {
 	/**
 	 * constructor
 	 *  @input path to path properties file (String)
-	 *	@input an existing userName to authenticate
+	 *  @input an existing userName to authenticate
 	 * */
 	public AuthenticateSampleCode(String path, String userName) {
 		Properties props = new Properties();
@@ -88,11 +89,11 @@ public class AuthenticateSampleCode {
 	}
 	
 	/**
-	 * this method demonstrates the second use of start authentication- when the first call returns 30008
-	 * this means that the org's configurations are multiple devices allowed and selective mode is on (doesn't send to default device) 
+	 * this method demonstrates the second use of startAuthentication - when the first call returns 30008
+	 * this means that the org's configurations are multiple devices allowed and selection mode is on (doesn't send to default device) 
 	 * and the user has more then one device
 	 * in that case the response of the first API call will include the information on the user devices and a sessionId 
-	 * it steel doesn't make the authentication it will give back which flow to choose for this device (online/ offline - sms,offline - voice etc)
+	 * it still doesn't make the authentication. it will give back which flow to choose for this device (online, offline, sms, offline, voice etc)
 	 * @input deviceId - one that we chose from multiple 
 	 * @input sessionId 
 	 **/
@@ -134,7 +135,7 @@ public class AuthenticateSampleCode {
 	}
 	
 	/**
-	 * this method demonstrates how to call AuthOffline API. this call makes an offline authentication to a given device. 
+	 * this method demonstrates how to call AuthOffline API. this method authenticates the user with an offline "device" (sms, voice, yubikey, swipe-disable mobile app). 
 	 * the @input otp is accepted from sms/voice/yubikey/mail according to device configuration
 	 * the deviceId and sessionId are accepted from the response of StartAuthentication API call 
 	 * see also @link https://developer.pingidentity.com/en/api/pingid-api/authentication-api.html#online_authentication_workflow
@@ -342,22 +343,27 @@ public class AuthenticateSampleCode {
 		}
 		
 		long errorId = (long)response.get("errorId");
-	/**
-	 *  30001 - Offline authentication (SMS) (OTP was sent, collect the OTP and call offline authentication)
-	 *	30002 - Offline authentication (Voice)(OTP was sent, collect the OTP and call offline authentication)
-	 *	30003 - Offline authentication (Application)(OTP was sent, collect the OTP and call offline authentication)
-	 *  30004 - Offline authentication (YubiKey)(collect the OTP and call offline authentication)
-	 *	30005 - Offline authentication (Email)(OTP was sent, collect the OTP and call offline authentication)
-	 *	30007 - Online authentication (Application) (call OnlineAuthentication)
-	 *	30008 - Device selection prompt (ask for a user to select a device and call startAuthentication again with the sessionID from the current request and the device ID for the selected device).
-	 * */
+		
+		
+		/**
+		*  30001 - Offline authentication (SMS) (OTP was sent, collect the OTP and call offline authentication)
+		*  30002 - Offline authentication (Voice)(OTP was sent, collect the OTP and call offline authentication)
+		*  30003 - Offline authentication (Application)(OTP was sent, collect the OTP and call offline authentication)
+		*  30004 - Offline authentication (YubiKey)(collect the OTP and call offline authentication)
+		*  30005 - Offline authentication (Email)(OTP was sent, collect the OTP and call offline authentication)
+		*  30007 - Online authentication (Application) (call OnlineAuthentication)
+		*  30008 - Device selection prompt (ask for a user to select a device and call startAuthentication again with the sessionID from the current request and the device ID for the selected device).
+		* */
 		JSONArray devices = (JSONArray) response.get("userDevices");
 		Long deviceId = (Long)((JSONObject)devices.get(0)).get("deviceId");
 		String sessionId = (String)(response.get("sessionId"));
 		Long otp = null;
 		
 		System.out.println(response.get("errorMsg"));
-
+		
+		//
+		// Handle the response of StartAuthentication
+		//
 		switch((int)errorId){
 			case 30001: // this will happen when primary device's authentication type is sms - see above
 			case 30002: // this will happen when primary device's authentication type is voice - see above
@@ -386,23 +392,20 @@ public class AuthenticateSampleCode {
 			case 30008:
 				// this will happen when selection mode is enabled and there is more then one device
 				devices = (JSONArray) response.get("userDevices");
-				// notice to index - i chose a different device
-				deviceId = (Long)((JSONObject)devices.get(1)).get("deviceId");
+				
+				// user selects the device (in this example, the 2nd device)
+				int indexOfSelectedDevice = 1;
+				
+				deviceId = (Long)((JSONObject)devices.get(indexOfSelectedDevice)).get("deviceId");
 				sessionId = (String)(response.get("sessionId"));
 				response = authenticator.startAuthentication(sessionId, deviceId);
 				long flow = (Long)response.get("errorId");
 				
-				devices = (JSONArray) response.get("userDevices");
-				deviceId = (Long)((JSONObject)devices.get(0)).get("deviceId");
-				sessionId = (String)(response.get("sessionId"));
-				//the continuance is depends on the selected device. in this sample it's number 1- you can choose what ever you want
-				if (flow == 30007) {
-					response = authenticator.authOnLine(sessionId, deviceId);
-				} else {
-					//30001, 30002, 30003, 30005 authOffline with long otp
-					//30004 - authOffline with String otp
-					//....
-				}
+				// handle the flow according to the returned status code (as done above):
+				// 30001, 30002, 30003, 30005 authOffline with long otp
+				// 30004 - authOffline with String otp (yubikey)
+				// 30007 - authOnline
+
 				break;
 			default:
 				break;
