@@ -342,7 +342,7 @@ public class AuthenticateSampleCode {
 			System.exit(1);
 		}
 		
-		long errorId = (long)response.get("errorId");
+		long errorId = (Long)response.get("errorId");
 		
 		
 		/**
@@ -377,7 +377,7 @@ public class AuthenticateSampleCode {
 				break;
 			case 30007: //the selective mode is disable and the primary device authentication type is Mobile
 				response = authenticator.authOnLine(sessionId, deviceId);
-				errorId = (long)response.get("errorId");
+				errorId = (Long)response.get("errorId");
 
 				//you should get a push to your phone...
 				//unless the phone has disabled notifications and then you'll get prompt to enter OTP from device
@@ -412,7 +412,7 @@ public class AuthenticateSampleCode {
 		}
 		
 
-		errorId = (long)response.get("errorId");
+		errorId = (Long)response.get("errorId");
 		String msg = (String)response.get("errorMsg");
 		if (errorId == 200) {
 			msg = "SUCCESS";
