@@ -299,6 +299,7 @@ public class AuthenticateSampleCode {
 		reqHeader.put("locale", "en");
 		reqHeader.put("orgAlias", this.orgAlias);
 		reqHeader.put("token", this.token);
+		reqHeader.put("secretKey", this.token);
 		reqHeader.put("timestamp", getCurrentTimeStamp());
 		reqHeader.put("version", "4.9");
 
